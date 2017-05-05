@@ -6,6 +6,7 @@
 #include <string.h>
 
 #define PORT 8080
+#define BUFF_LEN 2048
 
 void error(char *msg) {
 	perror(msg);
@@ -17,8 +18,10 @@ int main(int argc, char *argv[]){
 	struct sockaddr_in address;
 	int opt = 1;
 	int addrLen = sizeof(address);
-	char buffer[2048] = {0};
+	char buffer[BUFF_LEN] = {0};
 	char *message = "MOTD: Welcome";
+	char *errorMessage = "404: Not Found";
+	char *clientRequest = "GET index.html HTTP/1.1\n";
 
 	if((serverD = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
 		error("socket error");
@@ -43,10 +46,15 @@ int main(int argc, char *argv[]){
 	if ((newSocket = accept(serverD, (struct sockaddr_in *)&address, (socklen_t*)&addrLen)) < 0) {
 		error("accept error");
 	}
-
-	valRead = read(newSocket, buffer, 2048);
-	printf("%s\n", buffer);
-	send(newSocket, message, strlen(message), 0);
-	printf("Client reply sent\n");
-	return 0;
+	while(1) {
+		valRead = read(newSocket, buffer, BUFF_LEN);
+		printf("%s\n", buffer);
+		if(strcmp(clientRequest, buffer) == 0) {
+			send(newSocket, message, strlen(message), 0);
+			printf("Message sent\n");
+		} else {
+			send(newSocket, errorMessage, strlen(errorMessage), 0);
+			printf("Error message sent\n");
+		}
+	}
 }
