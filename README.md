@@ -10,4 +10,4 @@ A simple web server written in C.
 
 `chmod +x simpleWebServer`
 
-`./simpleWebServer
+`./simpleWebServer`

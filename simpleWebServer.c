@@ -1,9 +1,11 @@
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <fcntl.h>
 
 #define PORT 8080
 #define BUFF_LEN 2048
@@ -14,7 +16,8 @@ void error(char *msg) {
 }
 
 int main(int argc, char *argv[]){
-	int serverD, newSocket, valRead;
+	int serverD, newSocket, valRead, fileSize;
+	FILE *file;
 	struct sockaddr_in address;
 	int opt = 1;
 	int addrLen = sizeof(address);
@@ -50,8 +53,18 @@ int main(int argc, char *argv[]){
 		valRead = read(newSocket, buffer, BUFF_LEN);
 		printf("%s\n", buffer);
 		if(strcmp(clientRequest, buffer) == 0) {
-			send(newSocket, message, strlen(message), 0);
-			printf("Message sent\n");
+			file = fopen("index.html", "r");
+			if(file == -1) {
+				error("Failed to open file");
+			}
+			fseek(file, 0, SEEK_END);
+			fileSize = ftell(file);
+			rewind(file);
+			char fileBuffer[fileSize];
+			read(file, fileBuffer, fileSize);
+			send(newSocket, fileBuffer, fileSize, 0); //strlen fileBuffer
+			printf("Page served\n");
+			fclose(file);
 		} else {
 			send(newSocket, errorMessage, strlen(errorMessage), 0);
 			printf("Error message sent\n");

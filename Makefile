@@ -1,5 +1,4 @@
 CC=gcc
-CLFAGS = -Wall -g
-TARGETDIR := /bin
+CLFAGS=-Wall -g -Q -v
 
 all: simpleWebServer
