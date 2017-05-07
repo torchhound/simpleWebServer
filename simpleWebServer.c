@@ -16,15 +16,20 @@ void error(char *msg) {
 }
 
 int main(int argc, char *argv[]){
-	int serverD, newSocket, valRead, fileSize;
+	int serverD, newSocket, valRead, fileSize, notFoundSize;
 	FILE *file;
+	FILE *notFound = fopen("404.html", "r");
 	struct sockaddr_in address;
 	int opt = 1;
 	int addrLen = sizeof(address);
 	char buffer[BUFF_LEN] = {0};
-	char *message = "MOTD: Welcome";
-	char *errorMessage = "404: Not Found";
 	char *clientRequest = "GET index.html HTTP/1.1\n";
+
+	fseek(notFound, 0, SEEK_END);
+	notFoundSize = ftell(notFound);
+	rewind(notFound);
+	char notFoundBuffer[notFoundSize];
+	read(notFound, notFoundBuffer, notFoundSize);
 
 	if((serverD = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
 		error("socket error");
@@ -54,20 +59,22 @@ int main(int argc, char *argv[]){
 		printf("%s\n", buffer);
 		if(strcmp(clientRequest, buffer) == 0) {
 			file = fopen("index.html", "r");
-			if(file == -1) {
-				error("Failed to open file");
+			if(file == NULL) {
+				send(newSocket, notFoundBuffer, notFoundSize, 0);
+				printf("404 sent\n");
 			}
 			fseek(file, 0, SEEK_END);
 			fileSize = ftell(file);
 			rewind(file);
 			char fileBuffer[fileSize];
 			read(file, fileBuffer, fileSize);
-			send(newSocket, fileBuffer, fileSize, 0); //strlen fileBuffer
-			printf("Page served\n");
+			send(newSocket, fileBuffer, fileSize, 0);
+			printf("File served\n");
 			fclose(file);
 		} else {
-			send(newSocket, errorMessage, strlen(errorMessage), 0);
-			printf("Error message sent\n");
+			send(newSocket, notFoundBuffer, notFoundSize, 0);
+			printf("404 sent\n");
 		}
 	}
+	fclose(notFound);
 }
