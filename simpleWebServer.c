@@ -16,14 +16,14 @@ void error(char *msg) {
 }
 
 int main(int argc, char *argv[]){
-	int serverD, newSocket, valRead, fileSize, notFoundSize;
+	int serverD, newSocket, fileSize, notFoundSize;
 	FILE *file;
 	FILE *notFound = fopen("404.html", "r");
 	struct sockaddr_in address;
 	int opt = 1;
 	int addrLen = sizeof(address);
 	char buffer[BUFF_LEN] = {0};
-	char *clientRequest = "GET index.html HTTP/1.1\n";
+	char *requestSplit;
 
 	fseek(notFound, 0, SEEK_END);
 	notFoundSize = ftell(notFound);
@@ -55,9 +55,12 @@ int main(int argc, char *argv[]){
 		error("accept error");
 	}
 	while(1) {
-		valRead = read(newSocket, buffer, BUFF_LEN);
+		memset(buffer, '\0', BUFF_LEN);
+		read(newSocket, buffer, BUFF_LEN);
+		requestSplit = strtok(buffer, " ");
 		printf("%s\n", buffer);
-		if(strcmp(clientRequest, buffer) == 0) {
+		printf("%s\n", requestSplit);
+		if(strcmp("GET\n", requestSplit) == 0 || strcmp("GET", requestSplit) == 0) {
 			file = fopen("index.html", "r");
 			if(file == NULL) {
 				send(newSocket, notFoundBuffer, notFoundSize, 0);
