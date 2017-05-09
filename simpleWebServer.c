@@ -9,6 +9,7 @@
 
 #define PORT 8080
 #define BUFF_LEN 2048
+//malloc BUFF_LEN to prevent stack overflow
 
 void error(char *msg) {
 	perror(msg);
@@ -24,12 +25,23 @@ int main(int argc, char *argv[]){
 	int addrLen = sizeof(address);
 	char buffer[BUFF_LEN] = {0};
 	char *requestSplit;
+	char *okResponse = "HTTP/1.1 200 OK\nContent-Type: text/html\n";
+	char *notFoundPartial = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: ";
+	char notFoundCharSize[2048]; //malloc
+	char *notFoundResponse;
 
 	fseek(notFound, 0, SEEK_END);
 	notFoundSize = ftell(notFound);
 	rewind(notFound);
 	char notFoundBuffer[notFoundSize];
 	read(notFound, notFoundBuffer, notFoundSize);
+	sprintf(notFoundCharSize, "%d", notFoundSize);
+	notFoundResponse = malloc(strlen(notFoundPartial) + strlen(notFoundCharSize) + 1);
+	strcpy(notFoundResponse, notFoundPartial);
+	strcat(notFoundResponse, notFoundCharSize);
+	strcat(notFoundResponse, "\n");
+	printf(notFoundResponse);
+	printf(okResponse);
 
 	if((serverD = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
 		error("socket error");
@@ -80,4 +92,6 @@ int main(int argc, char *argv[]){
 		}
 	}
 	fclose(notFound);
+	fclose(file);
+	free(notFoundResponse);
 }
