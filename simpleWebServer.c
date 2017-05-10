@@ -18,7 +18,7 @@ void error(char *msg) {
 int main(int argc, char *argv[]){
 	int serverD, newSocket, fileSize, notFoundSize;
 	FILE *file;
-	FILE *notFound = fopen("404.html", "r");
+	FILE *notFound;
 	struct sockaddr_in address;
 	int opt = 1;
 	int addrLen = sizeof(address);
@@ -30,11 +30,12 @@ int main(int argc, char *argv[]){
 	char *notFoundResponse;
 	char fileCharSize[2048]; //malloc
 
+	notFound = fopen("404.html", "r");
 	fseek(notFound, 0, SEEK_END);
 	notFoundSize = ftell(notFound);
 	rewind(notFound);
 	char notFoundBuffer[notFoundSize];
-	read(notFound, notFoundBuffer, notFoundSize);
+	fread(notFoundBuffer, notFoundSize, 1, notFound);
 	sprintf(notFoundCharSize, "%d", notFoundSize);
 	int notFoundResponseSize = strlen(notFoundPartial) + strlen(notFoundCharSize) + strlen(notFoundBuffer) + 1;
 	notFoundResponse = malloc(notFoundResponseSize);
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]){
 	strcat(notFoundResponse, notFoundCharSize);
 	strcat(notFoundResponse, "\n");
 	strcat(notFoundResponse, notFoundBuffer);
-	printf(notFoundResponse);
+	printf("Server listening on port %d\n", PORT);
 
 	if((serverD = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
 		error("socket error");
@@ -67,12 +68,10 @@ int main(int argc, char *argv[]){
 	if ((newSocket = accept(serverD, (struct sockaddr_in *)&address, (socklen_t*)&addrLen)) < 0) {
 		error("accept error");
 	}
-	while(1) {
+	while(1) { //move to top 
 		memset(readBuffer, '\0', BUFF_LEN);
 		read(newSocket, readBuffer, BUFF_LEN);
-		requestSplit = strtok(readBuffer, " ");
-		printf("%s\n", readBuffer);
-		printf("%s\n", requestSplit);
+		requestSplit = strtok(readBuffer, " "); //strtok / on second requestSplit token
 		if(strcmp("GET\n", requestSplit) == 0 || strcmp("GET", requestSplit) == 0) {
 			file = fopen("index.html", "r");
 			if(file == NULL) {
@@ -85,7 +84,7 @@ int main(int argc, char *argv[]){
 			char fileBuffer[fileSize];
 			int fileSendSize = fileSize + snprintf(NULL, 0, "%d", fileSize) + strlen(okResponse) + 2;
 			char fileSendBuffer[fileSendSize];
-			read(file, fileBuffer, fileSize);
+			fread(fileBuffer, fileSize, 1, file);
 			strcat(fileSendBuffer, okResponse);
 			sprintf(fileCharSize, "%d", fileSize);
 			strcat(fileSendBuffer, fileCharSize);
