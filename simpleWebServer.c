@@ -60,15 +60,13 @@ int main(int argc, char *argv[]){
 	if(bind(serverD, (struct sockaddr_in *)&address, sizeof(address))< 0) {
 		error("bind error");
 	}
-
-	if(listen(serverD, 3) < 0) {
-		error("listen error");
-	}
-
-	if ((newSocket = accept(serverD, (struct sockaddr_in *)&address, (socklen_t*)&addrLen)) < 0) {
+	while(1) {
+		if(listen(serverD, 3) < 0) {
+			error("listen error");
+		}
+		if ((newSocket = accept(serverD, (struct sockaddr_in *)&address, (socklen_t*)&addrLen)) < 0) {
 		error("accept error");
-	}
-	while(1) { //move to top 
+		}
 		memset(readBuffer, '\0', BUFF_LEN);
 		read(newSocket, readBuffer, BUFF_LEN);
 		requestSplit = strtok(readBuffer, " "); //strtok / on second requestSplit token
@@ -76,8 +74,10 @@ int main(int argc, char *argv[]){
 			file = fopen("index.html", "r");
 			if(file == NULL) {
 				if(send(newSocket, notFoundResponse, notFoundResponseSize, 0) < notFoundResponseSize) {
+					close(newSocket);
 					error("404 send error");
 				}
+				close(newSocket);
 				printf("404 sent\n");
 			}
 			fseek(file, 0, SEEK_END);
@@ -93,14 +93,18 @@ int main(int argc, char *argv[]){
 			strcat(fileSendBuffer, "\r\n");
 			strcat(fileSendBuffer, fileBuffer);
 			if(send(newSocket, fileSendBuffer, fileSendSize, 0) < fileSendSize) {
+				close(newSocket);
 				error("file send error");
 			}
+			close(newSocket);
 			printf("File served\n");
 			fclose(file);
 		} else {
 			if(send(newSocket, notFoundResponse, notFoundResponseSize, 0) < notFoundResponseSize) {
+				close(newSocket);
 				error("404 send error");
 			}
+			close(newSocket);
 			printf("404 sent\n");
 		}
 	}
