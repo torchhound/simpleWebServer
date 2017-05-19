@@ -24,8 +24,8 @@ int main(int argc, char *argv[]){
 	int addrLen = sizeof(address);
 	char readBuffer[BUFF_LEN] = {0};
 	char *requestSplit;
-	char *okResponse = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: ";
-	char *notFoundPartial = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: ";
+	char *okResponse = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: ";
+	char *notFoundPartial = "HTTP/1.0 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: ";
 	char notFoundCharSize[2048]; //malloc
 	char *notFoundResponse;
 	char fileCharSize[2048]; //malloc
@@ -37,11 +37,11 @@ int main(int argc, char *argv[]){
 	char notFoundBuffer[notFoundSize];
 	fread(notFoundBuffer, notFoundSize, 1, notFound);
 	sprintf(notFoundCharSize, "%d", notFoundSize);
-	int notFoundResponseSize = strlen(notFoundPartial) + strlen(notFoundCharSize) + strlen(notFoundBuffer) + 1;
+	int notFoundResponseSize = strlen(notFoundPartial) + strlen(notFoundCharSize) + strlen(notFoundBuffer) + 4; //don't hardcode padding
 	notFoundResponse = malloc(notFoundResponseSize);
 	strcpy(notFoundResponse, notFoundPartial);
 	strcat(notFoundResponse, notFoundCharSize);
-	strcat(notFoundResponse, "\n");
+	strcat(notFoundResponse, "\r\n\r\n");
 	strcat(notFoundResponse, notFoundBuffer);
 	printf("Server listening on port %d\n", PORT);
 
@@ -75,7 +75,9 @@ int main(int argc, char *argv[]){
 		if(strcmp("GET\n", requestSplit) == 0 || strcmp("GET", requestSplit) == 0) {
 			file = fopen("index.html", "r");
 			if(file == NULL) {
-				send(newSocket, notFoundResponse, notFoundResponseSize, 0);
+				if(send(newSocket, notFoundResponse, notFoundResponseSize, 0) < notFoundResponseSize) {
+					error("404 send error");
+				}
 				printf("404 sent\n");
 			}
 			fseek(file, 0, SEEK_END);
@@ -88,13 +90,17 @@ int main(int argc, char *argv[]){
 			strcat(fileSendBuffer, okResponse);
 			sprintf(fileCharSize, "%d", fileSize);
 			strcat(fileSendBuffer, fileCharSize);
-			strcat(fileSendBuffer, "\n");
+			strcat(fileSendBuffer, "\r\n");
 			strcat(fileSendBuffer, fileBuffer);
-			send(newSocket, fileSendBuffer, fileSendSize, 0);
+			if(send(newSocket, fileSendBuffer, fileSendSize, 0) < fileSendSize) {
+				error("file send error");
+			}
 			printf("File served\n");
 			fclose(file);
 		} else {
-			send(newSocket, notFoundResponse, notFoundResponseSize, 0);
+			if(send(newSocket, notFoundResponse, notFoundResponseSize, 0) < notFoundResponseSize) {
+				error("404 send error");
+			}
 			printf("404 sent\n");
 		}
 	}
