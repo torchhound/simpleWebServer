@@ -65,7 +65,7 @@ int main(int argc, char *argv[]){
 			error("listen error");
 		}
 		if ((newSocket = accept(serverD, (struct sockaddr_in *)&address, (socklen_t*)&addrLen)) < 0) {
-		error("accept error");
+		  error("accept error");
 		}
 		memset(readBuffer, '\0', BUFF_LEN);
 		read(newSocket, readBuffer, BUFF_LEN);
@@ -84,11 +84,11 @@ int main(int argc, char *argv[]){
 			fileSize = ftell(file);
 			rewind(file);
 			char fileBuffer[fileSize];
-			int fileSendSize = fileSize + snprintf(NULL, 0, "%d", fileSize) + strlen(okResponse) + 2;
+			int fileSendSize = fileSize + snprintf(NULL, 0, "%d", fileSize) + strlen(okResponse) + 4;
 			char fileSendBuffer[fileSendSize];
 			fread(fileBuffer, fileSize, 1, file);
 			strcat(fileSendBuffer, okResponse);
-			sprintf(fileCharSize, "%d", fileSize);
+			sprintf(fileCharSize, "%d%s", fileSize, "\r\n");
 			strcat(fileSendBuffer, fileCharSize);
 			strcat(fileSendBuffer, "\r\n");
 			strcat(fileSendBuffer, fileBuffer);
@@ -96,6 +96,7 @@ int main(int argc, char *argv[]){
 				close(newSocket);
 				error("file send error");
 			}
+      printf(fileSendBuffer);
 			close(newSocket);
 			printf("File served\n");
 			fclose(file);
